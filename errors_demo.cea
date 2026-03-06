@@ -1,0 +1,22 @@
+# CEEA-Lang Example 3 – Errors Demo
+# ====================================
+# This file intentionally contains errors to demonstrate
+# the NLP explanation engine.
+#
+# Errors present:
+#   1. SEM040 – undeclared variable 'z'
+#   2. SEM021 – type mismatch (assigning string to int)
+#   3. SEM072 – wrong number of arguments
+
+func add(int a, int b) {
+    return a + b
+}
+
+# Error 1: using undeclared variable
+int result = z + 5
+
+# Error 2: type mismatch
+int number = "hello"
+
+# Error 3: wrong argument count
+int total = add(1, 2, 3)

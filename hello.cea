@@ -1,0 +1,10 @@
+# CEEA-Lang Example 1 – Hello World
+# ===================================
+# Save as: examples/hello.cea
+
+print "Hello, World!"
+
+int x = 10
+int y = 20
+int sum = x + y
+print sum
