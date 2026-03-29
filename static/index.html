@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CodeForge</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/material-darker.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/clike/clike.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/matchbrackets.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/selection/active-line.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/comment/comment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,700;1,400&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg:       #0d0d14;
+  --surf:     #13131f;
+  --surf2:    #1a1a28;
+  --surf3:    #20202f;
+  --bord:     #2a2a3f;
+  --bord2:    #35354f;
+  --txt:      #ffffff;
+  --txt2:     #9999bb;
+  --txt3:     #55556a;
+  --accent:   #6c63ff;
+  --accent2:  #9d97ff;
+  --green:    #00e676;
+  --red:      #ff4757;
+  --yellow:   #ffd32a;
+  --blue:     #2ed5ff;
+  --orange:   #ff9f43;
+  --mono:     'JetBrains Mono', monospace;
+  --sans:     'Space Grotesk', sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--txt);font-family:var(--sans);overflow:hidden}
+
+/* ═══ TOPBAR ═══ */
+#topbar{
+  height:48px;background:var(--surf);border-bottom:1px solid var(--bord);
+  display:flex;align-items:center;padding:0 14px;gap:12px;position:relative;z-index:20;
+}
+#logo{
+  display:flex;align-items:center;gap:8px;font-size:17px;font-weight:700;
+  letter-spacing:-0.3px;user-select:none;white-space:nowrap;
+}
+.logo-gem{
+  width:26px;height:26px;border-radius:6px;
+  background:linear-gradient(135deg,#6c63ff,#2ed5ff);
+  display:flex;align-items:center;justify-content:center;font-size:13px;
+}
+.sep{width:1px;height:22px;background:var(--bord);flex-shrink:0}
+
+/* Lang pills */
+.pill-group{display:flex;gap:2px;background:var(--surf2);border:1px solid var(--bord);border-radius:7px;padding:3px}
+.pill{
+  padding:3px 13px;border-radius:5px;border:none;background:transparent;
+  color:var(--txt2);font-family:var(--sans);font-size:12px;font-weight:600;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;
+}
+.pill:hover{color:var(--txt)}
+.pill.active{background:var(--accent);color:#fff}
+.pill.active.green{background:var(--green);color:#000}
+
+/* Run btn */
+#run-btn{
+  margin-left:auto;padding:6px 18px;background:var(--green);color:#000;
+  border:none;border-radius:7px;font-family:var(--sans);font-size:13px;
+  font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;
+  transition:all 0.15s;white-space:nowrap;flex-shrink:0;
+}
+#run-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+#run-btn:disabled{background:var(--surf3);color:var(--txt3);cursor:not-allowed;transform:none;filter:none}
+.spin{
+  width:12px;height:12px;border:2px solid rgba(0,0,0,0.3);
+  border-top-color:#000;border-radius:50%;animation:rot 0.7s linear infinite;display:none
+}
+.running .spin{display:block}
+.running .ri{display:none}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+#tool-chip{
+  font-family:var(--mono);font-size:10px;color:var(--txt3);
+  background:var(--surf2);border:1px solid var(--bord);
+  padding:2px 7px;border-radius:4px;white-space:nowrap;
+}
+
+/* ═══ LAYOUT ═══ */
+#main{display:flex;height:calc(100vh - 48px)}
+
+/* EDITOR */
+#ep{flex:1 1 56%;display:flex;flex-direction:column;border-right:1px solid var(--bord);min-width:280px}
+#eh{
+  height:34px;background:var(--surf2);border-bottom:1px solid var(--bord);
+  display:flex;align-items:center;padding:0 12px;gap:8px;font-size:11px;
+  color:var(--txt3);font-family:var(--mono);
+}
+.dot{width:9px;height:9px;border-radius:50%}
+.dr{background:#ff5f57}.dy{background:#febc2e}.dg{background:#28c840}
+#ew{flex:1;overflow:hidden}
+
+/* CodeMirror white text override */
+.CodeMirror{height:100%!important;font-family:var(--mono)!important;font-size:14px!important;line-height:1.7!important;background:#0d0d14!important}
+.CodeMirror-scroll{padding-bottom:60px}
+.CodeMirror-gutters{background:#0d0d14!important;border-right:1px solid var(--bord)!important}
+.CodeMirror-linenumber{color:#444460!important}
+.CodeMirror-activeline-background{background:rgba(108,99,255,0.06)!important}
+/* Force white text for all code tokens */
+.CodeMirror-code .cm-default,
+.CodeMirror-code .cm-variable,
+.CodeMirror-code .cm-variable-2,
+.CodeMirror-code .cm-variable-3,
+.CodeMirror-code .cm-property,
+.CodeMirror-code .cm-type,
+.cm-s-material-darker .cm-variable,
+.cm-s-material-darker .cm-variable-2 { color: #ffffff !important; }
+.cm-s-material-darker .cm-keyword   { color: #c792ea !important; }
+.cm-s-material-darker .cm-string    { color: #c3e88d !important; }
+.cm-s-material-darker .cm-comment   { color: #546e7a !important; font-style:italic }
+.cm-s-material-darker .cm-number    { color: #f78c6c !important; }
+.cm-s-material-darker .cm-operator  { color: #89ddff !important; }
+.cm-s-material-darker .cm-punctuation{ color: #89ddff !important; }
+.cm-s-material-darker .cm-def      { color: #82aaff !important; }
+.CodeMirror-cursor{border-left:2px solid var(--accent)!important}
+.CodeMirror-selected{background:rgba(108,99,255,0.25)!important}
+
+/* RESIZER */
+#rz{width:4px;background:var(--bord);cursor:col-resize;flex-shrink:0;transition:background 0.15s}
+#rz:hover,#rz.drag{background:var(--accent)}
+
+/* RIGHT PANEL */
+#rp{flex:0 0 44%;display:flex;flex-direction:column;min-width:260px;overflow:hidden}
+
+/* Output */
+#out-sec{flex:0 0 190px;display:flex;flex-direction:column;border-bottom:1px solid var(--bord)}
+#stdin-sec{flex:0 0 auto;display:flex;flex-direction:column;border-bottom:1px solid var(--bord);min-height:80px;max-height:140px}
+#stdin-hd{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;font-size:11px;font-weight:600;color:var(--txt2);background:var(--surf2);border-bottom:1px solid var(--bord);user-select:none}
+#stdin-clear{background:none;border:none;color:var(--txt3);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px;line-height:1}
+#stdin-clear:hover{color:var(--red);background:rgba(255,80,80,0.1)}
+#stdin-box{flex:1;resize:none;background:var(--surf1);color:var(--txt1);border:none;outline:none;padding:8px 12px;font-family:var(--mono);font-size:12px;line-height:1.6;overflow-y:auto}
+#stdin-box::placeholder{color:var(--txt3)}
+#out-hd{
+  height:34px;background:var(--surf2);border-bottom:1px solid var(--bord);
+  display:flex;align-items:center;padding:0 12px;gap:8px;
+  font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:1px;text-transform:uppercase;
+  cursor:row-resize;
+}
+#sdot{width:7px;height:7px;border-radius:50%;background:var(--txt3);transition:all 0.3s}
+#sdot.ok{background:var(--green);box-shadow:0 0 8px var(--green)}
+#sdot.err{background:var(--red);box-shadow:0 0 8px var(--red)}
+#sdot.run{background:var(--yellow);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+#out-bd{
+  flex:1;overflow-y:auto;overflow-x:auto;padding:10px 14px;font-family:var(--mono);
+  font-size:13px;line-height:1.65;background:var(--bg);color:var(--txt);
+  min-height:0;scroll-behavior:smooth;
+}
+/* Output-specific scrollbar — more visible than the global one */
+#out-bd::-webkit-scrollbar{width:7px;height:7px}
+#out-bd::-webkit-scrollbar-track{background:var(--surf1);border-radius:4px}
+#out-bd::-webkit-scrollbar-thumb{background:var(--bord2);border-radius:4px;border:1px solid var(--surf1)}
+#out-bd::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+#out-bd::-webkit-scrollbar-corner{background:var(--surf1)}
+/* Scroll-to-bottom floating button */
+#scroll-to-bottom{
+  position:absolute;bottom:10px;right:16px;
+  background:var(--surf2);border:1px solid var(--bord2);color:var(--txt2);
+  border-radius:50%;width:26px;height:26px;font-size:14px;
+  cursor:pointer;display:none;align-items:center;justify-content:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.35);transition:background 0.15s,opacity 0.2s;
+  z-index:10;padding:0;line-height:1;
+}
+#scroll-to-bottom:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+#out-sec{position:relative}
+#ctime{margin-left:auto;font-size:10px;color:var(--txt3);font-family:var(--mono)}
+
+/* Tabs area */
+#tabs-sec{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#tab-nav{
+  height:38px;background:var(--surf2);border-bottom:1px solid var(--bord);
+  display:flex;align-items:end;padding:0 8px;gap:1px;overflow-x:auto;
+}
+#tab-nav::-webkit-scrollbar{height:3px}
+#tab-nav::-webkit-scrollbar-thumb{background:var(--bord2)}
+
+.tab-btn{
+  padding:7px 14px;border:none;border-bottom:2px solid transparent;background:transparent;
+  color:var(--txt3);font-family:var(--sans);font-size:12px;font-weight:600;
+  cursor:pointer;transition:all 0.15s;white-space:nowrap;border-radius:4px 4px 0 0;
+}
+.tab-btn:hover{color:var(--txt2)}
+.tab-btn.active{color:var(--txt);border-bottom-color:var(--accent)}
+
+#tab-body{flex:1;overflow:hidden;position:relative}
+.tab-pane{
+  display:none;position:absolute;inset:0;overflow-y:auto;padding:12px;
+}
+.tab-pane.active{display:block}
+
+/* ── ERRORS TAB ── */
+#ai-tag{
+  font-size:10px;color:var(--accent2);font-family:var(--mono);
+  padding:2px 7px;border:1px solid var(--accent);border-radius:10px;
+  margin-left:auto;opacity:0;transition:opacity 0.3s;display:flex;align-items:center;gap:3px
+}
+#ai-tag.show{opacity:1}
+#err-badge{
+  background:var(--red);color:#fff;font-size:10px;font-weight:700;
+  padding:1px 5px;border-radius:8px;display:none
+}
+
+.ecard{
+  background:var(--surf);border:1px solid var(--bord);
+  border-left:3px solid var(--red);border-radius:6px;
+  margin-bottom:10px;overflow:hidden;
+  animation:fadein 0.25s ease;
+}
+.ecard.warn{border-left-color:var(--yellow)}
+@keyframes fadein{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+
+.ecard-head{padding:9px 12px;display:flex;align-items:flex-start;gap:8px}
+.ecard-ico{font-size:15px;flex-shrink:0;margin-top:1px}
+.ecard-meta{flex:1;min-width:0}
+.ecard-title{font-size:13px;font-weight:700;color:var(--txt);margin-bottom:1px}
+.ecard-loc{font-family:var(--mono);font-size:11px;color:var(--txt3)}
+.ecard-body{padding:0 12px 11px 34px}
+.ecard-explain{font-size:13px;color:var(--txt);line-height:1.65;margin-bottom:7px}
+.ecard-src{
+  background:var(--surf2);border:1px solid var(--bord);border-radius:4px;
+  padding:7px 9px;font-family:var(--mono);font-size:12px;margin-bottom:7px;
+}
+.src-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+.src-bad{color:var(--red)}.src-fix{color:var(--green);margin-top:3px}
+.fix-box{
+  background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.2);
+  border-radius:4px;padding:7px 9px;font-family:var(--mono);
+  font-size:12px;color:var(--green);line-height:1.5;margin-bottom:5px
+}
+.fix-lbl{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px}
+.raw-tog{
+  font-size:11px;color:var(--txt3);cursor:pointer;
+  display:inline-flex;align-items:center;gap:3px;user-select:none;margin-top:3px
+}
+.raw-tog:hover{color:var(--txt2)}
+.raw-box{display:none;margin-top:5px;font-family:var(--mono);font-size:11px;
+  color:var(--txt3);white-space:pre-wrap;word-break:break-all}
+.raw-box.open{display:block}
+
+/* Skeleton */
+.skel{
+  background:var(--surf);border:1px solid var(--bord);
+  border-left:3px solid var(--accent);border-radius:6px;
+  padding:12px;margin-bottom:10px
+}
+.skel-ln{
+  height:11px;border-radius:3px;margin-bottom:7px;
+  background:linear-gradient(90deg,var(--bord) 25%,var(--bord2) 50%,var(--bord) 75%);
+  background-size:200% 100%;animation:shim 1.4s infinite
+}
+@keyframes shim{to{background-position:-200% 0}}
+
+/* ── SYMBOL TABLE ── */
+.sym-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+.sym-table th{
+  background:var(--surf2);color:var(--txt2);padding:6px 9px;
+  border-bottom:1px solid var(--bord);text-align:left;font-size:10px;
+  text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap
+}
+.sym-table td{
+  padding:5px 9px;border-bottom:1px solid rgba(42,42,63,0.5);
+  color:var(--txt);vertical-align:middle;
+}
+.sym-table tr:hover td{background:rgba(108,99,255,0.05)}
+.sym-kind{
+  display:inline-block;padding:1px 6px;border-radius:3px;font-size:10px;
+  font-weight:700;text-transform:uppercase;letter-spacing:0.3px
+}
+.k-fn  {background:rgba(108,99,255,0.15);color:#a594f9}
+.k-var {background:rgba(255,159,67,0.15);color:#ff9f43}
+.k-cls {background:rgba(0,230,118,0.15);color:#00e676}
+.k-par {background:rgba(46,213,255,0.15);color:#2ed5ff}
+.sym-warn{
+  background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.2);
+  border-radius:5px;padding:7px 10px;margin-bottom:7px;font-size:12px;
+  color:var(--txt);display:flex;gap:7px;align-items:flex-start
+}
+.sym-warn-ico{color:var(--yellow);flex-shrink:0}
+
+/* ── AST TAB ── */
+#ast-wrap{background:var(--surf);border:1px solid var(--bord);border-radius:6px;padding:12px;min-height:200px}
+#mermaid-out{font-size:12px}
+#mermaid-out svg{max-width:100%;height:auto}
+.ast-raw{
+  font-family:var(--mono);font-size:11px;color:var(--txt2);
+  background:var(--surf2);border:1px solid var(--bord);border-radius:4px;
+  padding:10px;white-space:pre;overflow-x:auto;max-height:300px
+}
+
+/* ── ERROR REFERENCE ── */
+.ref-card{
+  background:var(--surf);border:1px solid var(--bord);border-radius:6px;
+  margin-bottom:10px;overflow:hidden
+}
+.ref-head{
+  padding:9px 13px;display:flex;align-items:center;gap:10px;
+  cursor:pointer;user-select:none;
+}
+.ref-head:hover{background:var(--surf2)}
+.ref-id{
+  font-family:var(--mono);font-size:10px;color:var(--txt3);
+  background:var(--surf2);border:1px solid var(--bord);
+  padding:1px 5px;border-radius:3px
+}
+.ref-tag{font-size:13px;font-weight:700;color:var(--txt);flex:1}
+.ref-langs{display:flex;gap:3px}
+.ref-lang{font-size:9px;padding:1px 5px;border-radius:10px;font-weight:700}
+.rl-cpp{background:rgba(108,99,255,0.15);color:var(--accent2)}
+.rl-java{background:rgba(255,159,67,0.15);color:var(--orange)}
+.ref-body{display:none;padding:0 13px 12px 13px;border-top:1px solid var(--bord)}
+.ref-body.open{display:block}
+.ref-desc{font-size:13px;color:var(--txt);margin:9px 0}
+.ref-code{
+  background:var(--bg);border:1px solid var(--bord);border-radius:4px;
+  font-family:var(--mono);font-size:12px;padding:8px 10px;
+  margin-bottom:6px;white-space:pre;overflow-x:auto
+}
+.ref-bad{border-left:3px solid var(--red)}.ref-good{border-left:3px solid var(--green)}
+.code-lbl{font-size:10px;color:var(--txt3);margin-bottom:3px;text-transform:uppercase;letter-spacing:0.5px}
+.ref-tip{
+  font-size:12px;color:var(--blue);background:rgba(46,213,255,0.06);
+  border:1px solid rgba(46,213,255,0.15);border-radius:4px;padding:6px 9px
+}
+
+/* ── LEXER TAB ── */
+.tok-grid{display:flex;flex-wrap:wrap;gap:5px}
+.tok{
+  font-family:var(--mono);font-size:11px;padding:2px 7px;
+  border-radius:4px;cursor:default;border:1px solid transparent;
+  transition:all 0.1s
+}
+.tok:hover{transform:scale(1.05)}
+.t-KEYWORD    {background:rgba(199,121,234,0.15);border-color:rgba(199,121,234,0.3);color:#c792ea}
+.t-IDENTIFIER {background:rgba(255,255,255,0.05);border-color:rgba(255,255,255,0.1);color:#fff}
+.t-NUMBER     {background:rgba(247,140,108,0.15);border-color:rgba(247,140,108,0.3);color:#f78c6c}
+.t-STRING     {background:rgba(195,232,141,0.12);border-color:rgba(195,232,141,0.3);color:#c3e88d}
+.t-OPERATOR   {background:rgba(137,221,255,0.1);border-color:rgba(137,221,255,0.3);color:#89ddff}
+.t-PUNCTUATION{background:rgba(137,221,255,0.08);border-color:rgba(137,221,255,0.2);color:#89ddff}
+.t-COMMENT    {background:rgba(84,110,122,0.15);border-color:rgba(84,110,122,0.3);color:#546e7a}
+.t-PREPROC    {background:rgba(0,230,118,0.08);border-color:rgba(0,230,118,0.2);color:#00e676}
+.t-UNKNOWN    {background:rgba(255,71,87,0.1);border-color:rgba(255,71,87,0.3);color:var(--red)}
+.tok-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+
+/* Common */
+.ph{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  height:100%;gap:8px;color:var(--txt3);font-size:13px;text-align:center;padding:30px
+}
+.ph-ico{font-size:32px;opacity:0.3}
+.ok-box{
+  display:flex;align-items:center;gap:9px;padding:12px;
+  background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.2);
+  border-radius:6px;color:var(--green);font-size:13px;font-weight:600
+}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bord2);border-radius:3px}
+.out-good{color:var(--txt);font-family:var(--mono)}
+.out-time{color:var(--txt3);font-size:11px;margin-top:8px;font-family:var(--mono)}
+
+/* ── AI chip in toolbar ── */
+#ollama-chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;border:1px solid var(--bord2);background:var(--surf2);color:var(--txt3);cursor:pointer;transition:all 0.2s;white-space:nowrap}
+#ollama-chip:hover{border-color:var(--accent);color:var(--txt2)}
+#ollama-chip.connected{border-color:#22c55e;color:#22c55e;background:rgba(34,197,94,0.08)}
+#ollama-chip.hf-ready{border-color:#f59e0b;color:#f59e0b;background:rgba(245,158,11,0.08)}
+#ollama-chip.error{border-color:var(--red);color:var(--red);background:rgba(255,80,80,0.08)}
+#ollama-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+
+/* ── AI Settings panel ── */
+#ollama-panel{margin:0 0 14px 0;border-radius:10px;overflow:hidden;border:1px solid var(--bord2);background:var(--surf1)}
+#ollama-panel-hd{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;background:var(--surf2);border-bottom:1px solid var(--bord2);font-size:12px;font-weight:700;cursor:pointer;user-select:none}
+#ollama-panel-hd .op-title{display:flex;align-items:center;gap:7px;color:var(--txt)}
+#ollama-panel-hd .op-chevron{color:var(--txt3);font-size:10px;transition:transform 0.2s}
+#ollama-panel.open .op-chevron{transform:rotate(90deg)}
+#ollama-panel-body{display:none;padding:12px 14px}
+#ollama-panel.open #ollama-panel-body{display:block}
+
+/* ── Section tabs ── */
+.ai-tabs{display:flex;gap:2px;margin-bottom:14px;background:var(--surf2);border-radius:8px;padding:3px}
+.ai-tab{flex:1;padding:5px 0;text-align:center;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;color:var(--txt3);border:none;background:none;transition:all 0.15s}
+.ai-tab.active{background:var(--surf3);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,0.2)}
+.ai-tab-pane{display:none}
+.ai-tab-pane.active{display:block}
+
+/* ── Badges ── */
+.op-badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700}
+.op-badge.ok{background:rgba(34,197,94,0.15);color:#22c55e;border:1px solid rgba(34,197,94,0.3)}
+.op-badge.warn{background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3)}
+.op-badge.err{background:rgba(255,80,80,0.12);color:var(--red);border:1px solid rgba(255,80,80,0.25)}
+.op-status-row{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px}
+
+/* ── HF token inputs ── */
+.hf-input-row{display:flex;gap:6px;align-items:center;margin-bottom:7px}
+.hf-input{flex:1;background:var(--surf2);color:var(--txt1);border:1px solid var(--bord2);border-radius:7px;padding:6px 10px;font-family:var(--mono);font-size:12px;outline:none;transition:border-color 0.15s;min-width:0}
+.hf-input:focus{border-color:var(--accent)}
+.hf-input.valid{border-color:#22c55e}
+.hf-input.invalid{border-color:var(--red)}
+.hf-icon-btn{background:var(--surf2);border:1px solid var(--bord2);color:var(--txt3);border-radius:7px;padding:6px 9px;font-size:12px;cursor:pointer;flex-shrink:0;transition:all 0.15s}
+.hf-icon-btn:hover{color:var(--txt2)}
+.hf-save-btn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:6px 13px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;transition:opacity 0.15s}
+.hf-save-btn:hover{opacity:0.85}
+.hf-save-btn:disabled{opacity:0.4;cursor:not-allowed}
+.hf-status-msg{font-size:11px;min-height:16px;margin-bottom:10px}
+.hf-status-msg.ok{color:#22c55e}
+.hf-status-msg.err{color:var(--red)}
+.hf-status-msg.info{color:var(--txt3)}
+
+/* ── Model selector ── */
+.op-model-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.op-model-row label{font-size:11px;color:var(--txt3);font-weight:600;white-space:nowrap}
+#hf-model-sel,#ollama-model-sel{flex:1;background:var(--surf2);color:var(--txt1);border:1px solid var(--bord2);border-radius:6px;padding:4px 8px;font-size:12px;font-family:var(--mono);outline:none;cursor:pointer}
+#hf-model-sel:focus,#ollama-model-sel:focus{border-color:var(--accent)}
+
+/* ── Toggle ── */
+.op-toggle-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:12px;color:var(--txt2)}
+.toggle-sw{position:relative;display:inline-block;width:34px;height:18px;flex-shrink:0}
+.toggle-sw input{opacity:0;width:0;height:0}
+.toggle-sl{position:absolute;inset:0;background:var(--bord2);border-radius:9px;cursor:pointer;transition:0.2s}
+.toggle-sl:before{position:absolute;content:"";height:12px;width:12px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:0.2s}
+.toggle-sw input:checked+.toggle-sl{background:var(--accent)}
+.toggle-sw input:checked+.toggle-sl:before{transform:translateX(16px)}
+
+/* ── Step lists ── */
+.op-steps,.hf-steps{list-style:none;padding:0;margin:0}
+.op-steps li,.hf-steps li{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--bord);font-size:12px;color:var(--txt2);align-items:flex-start;line-height:1.55}
+.op-steps li:first-child,.hf-steps li:first-child{border-top:none}
+.op-step-num{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.hf-step-num{flex-shrink:0;width:20px;height:20px;border-radius:50%;background:rgba(245,158,11,0.25);color:#f59e0b;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.op-steps code,.hf-steps code{background:var(--surf2);border:1px solid var(--bord2);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11px;color:var(--accent2)}
+.op-steps a,.hf-steps a{color:var(--accent);text-decoration:none}
+.op-steps a:hover,.hf-steps a:hover{text-decoration:underline}
+.hf-info-box{background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-size:12px;color:var(--txt2);line-height:1.55}
+.hf-info-box strong{color:var(--txt)}
+.hf-info-box code{background:var(--surf2);border:1px solid var(--bord2);border-radius:4px;padding:1px 5px;font-family:var(--mono);font-size:11px;color:var(--accent2)}
+
+.op-refresh-btn{width:100%;padding:7px;border-radius:7px;border:1px solid var(--bord2);background:var(--surf2);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;margin-top:10px;transition:all 0.15s}
+.op-refresh-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ── Fixed stderr output card ── */
+.stderr-card{
+  border-radius:8px;border:1px solid rgba(255,80,80,0.25);
+  background:rgba(255,80,80,0.06);overflow:hidden;
+}
+.stderr-card-hd{
+  display:flex;align-items:center;gap:7px;padding:7px 12px;
+  background:rgba(255,80,80,0.1);border-bottom:1px solid rgba(255,80,80,0.2);
+  font-size:11px;font-weight:700;color:var(--red);
+}
+.stderr-card-body{
+  padding:10px 12px;font-family:var(--mono);font-size:12px;
+  color:var(--txt2);white-space:pre-wrap;word-break:break-all;
+  max-height:220px;overflow-y:auto;line-height:1.6;
+}
+.stderr-card-body::-webkit-scrollbar{width:5px}
+.stderr-card-body::-webkit-scrollbar-track{background:transparent}
+.stderr-card-body::-webkit-scrollbar-thumb{background:rgba(255,80,80,0.3);border-radius:3px}
+.stderr-hint{
+  padding:8px 12px;font-size:11px;color:var(--txt3);border-top:1px solid rgba(255,80,80,0.15);
+  line-height:1.5;
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div id="topbar">
+  <div id="logo"><div class="logo-gem">⚡</div>CodeForge</div>
+  <div class="sep"></div>
+  <div class="pill-group">
+    <button class="pill active" data-lang="cpp">C++</button>
+    <button class="pill" data-lang="java">Java</button>
+  </div>
+  <div class="sep"></div>
+  <div class="pill-group">
+    <button class="pill active" data-level="beginner">Beginner</button>
+    <button class="pill" data-level="intermediate">Intermediate</button>
+    <button class="pill" data-level="expert">Expert</button>
+  </div>
+  <div id="tool-chip">g++ 13.3</div>
+  <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--txt2);margin-right:4px">
+    ⏱
+    <select id="timeout-sel" style="background:var(--surf2);color:var(--txt1);border:1px solid var(--surf3);border-radius:6px;padding:3px 6px;font-size:12px;cursor:pointer">
+      <option value="10">10s</option>
+      <option value="30" selected>30s</option>
+      <option value="60">60s</option>
+      <option value="120">120s</option>
+      <option value="0">No limit</option>
+    </select>
+  </label>
+  <div id="ollama-chip" title="AI Settings" onclick="document.getElementById('ollama-panel').classList.toggle('open');switchTab('errors')">
+    <span id="ollama-dot"></span>
+    <span id="ollama-label">AI</span>
+  </div>
+  <button id="run-btn">
+    <div class="spin"></div><span class="ri">▶</span>
+    <span id="rl">Run</span>
+  </button>
+</div>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- EDITOR -->
+  <div id="ep">
+    <div id="eh">
+      <div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div>
+      <span style="margin-left:8px" id="fname">main.cpp</span>
+      <span style="margin-left:auto;font-size:10px" id="cur">Ln 1, Col 1</span>
+    </div>
+    <div id="ew"><textarea id="editor"></textarea></div>
+  </div>
+
+  <div id="rz"></div>
+
+  <!-- RIGHT -->
+  <div id="rp">
+
+    <!-- OUTPUT -->
+    <div id="out-sec">
+      <div id="out-hd">
+        <div id="sdot"></div>
+        Output
+        <span id="ctime"></span>
+        <button id="clear-out-btn" title="Clear output" style="margin-left:4px;background:none;border:none;color:var(--txt3);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:4px;line-height:1">✕</button>
+      </div>
+      <div id="out-bd">
+        <div class="ph"><div class="ph-ico">▶</div><div>Press <strong>Run</strong> to compile</div></div>
+      </div>
+      <button id="scroll-to-bottom" title="Scroll to bottom">↓</button>
+    </div>
+
+    <!-- STDIN INPUT -->
+    <div id="stdin-sec">
+      <div id="stdin-hd">
+        <span>⌨ Program Input <span style="font-size:10px;color:var(--txt3);font-weight:400">(stdin — one value per line)</span></span>
+        <button id="stdin-clear" title="Clear input">✕</button>
+      </div>
+      <textarea id="stdin-box" placeholder="Type input here before running&#10;e.g. for cin >> x, type: 42"></textarea>
+    </div>
+
+    <!-- TABS -->
+    <div id="tabs-sec">
+      <div id="tab-nav">
+        <button class="tab-btn active" data-tab="errors">
+          ⚠ Errors <span id="err-badge"></span>
+        </button>
+        <button class="tab-btn" data-tab="symbols">⊞ Symbol Table</button>
+        <button class="tab-btn" data-tab="ast">⌥ AST</button>
+        <button class="tab-btn" data-tab="lexer">◈ Tokens</button>
+        <button class="tab-btn" data-tab="errref">⊙ Error Reference</button>
+      </div>
+
+      <div id="tab-body">
+
+        <!-- ERRORS -->
+        <div class="tab-pane active" id="pane-errors">
+          <div id="ai-tag">✦ AI Explanations</div>
+          <!-- AI Settings Panel -->
+          <div id="ollama-panel">
+            <div id="ollama-panel-hd" onclick="this.parentElement.classList.toggle('open')">
+              <span class="op-title"><span>🤖</span><span>AI Settings</span><span id="op-badge" class="op-badge err" style="margin-left:4px">Not configured</span></span>
+              <span class="op-chevron">▶</span>
+            </div>
+            <div id="ollama-panel-body">
+              <div class="ai-tabs">
+                <button class="ai-tab active" onclick="switchAiTab('hf',this)">🤗 HF Inference <small style="opacity:0.7">(portable)</small></button>
+                <button class="ai-tab" onclick="switchAiTab('ollama',this)">🦙 Local Ollama</button>
+              </div>
+
+              <!-- HF Inference Tab -->
+              <div class="ai-tab-pane active" id="ai-pane-hf">
+                <div class="hf-info-box"><strong>✈ Works on any machine</strong> — uses the free Hugging Face cloud API. Just paste your <strong>Read token</strong> below. No Ollama install, no GPU, no downloads needed.</div>
+                <div class="op-status-row"><span style="color:var(--txt3);font-size:12px">Status:</span><span id="hf-status-text" style="color:var(--txt2);font-size:12px">Checking…</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">HF Token</div>
+                <div class="hf-input-row">
+                  <input type="password" id="hf-token-input" class="hf-input" placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false"/>
+                  <button class="hf-icon-btn" onclick="toggleHfVisibility()" title="Show/hide">👁</button>
+                  <button class="hf-save-btn" id="hf-save-btn" onclick="saveHfSettings()">Save</button>
+                </div>
+                <div class="hf-status-msg info" id="hf-save-msg">Paste your token above and click Save.</div>
+                <div class="op-model-row" style="margin-top:6px">
+                  <label>Model</label>
+                  <select id="hf-model-sel" onchange="saveHfModelOnly()">
+                    <option value="mistralai/Mistral-7B-Instruct-v0.3">Mistral 7B — best quality</option>
+                    <option value="HuggingFaceH4/zephyr-7b-beta">Zephyr 7B — alternative</option>
+                    <option value="microsoft/Phi-3-mini-4k-instruct">Phi-3 Mini — fastest</option>
+                    <option value="google/gemma-2-2b-it">Gemma 2B — lightweight</option>
+                    <option value="Qwen/Qwen2.5-Coder-7B-Instruct">Qwen Coder — code-focused</option>
+                  </select>
+                </div>
+                <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;margin-top:10px">How to get your free token</div>
+                <ol class="hf-steps">
+                  <li><span class="hf-step-num">1</span><span>Go to <a href="https://huggingface.co/settings/tokens" target="_blank">huggingface.co/settings/tokens</a> and sign in (free account).</span></li>
+                  <li><span class="hf-step-num">2</span><span>Click <strong>New token</strong>, name it <code>codeforge</code>, set role to <strong>Read</strong>, click <strong>Generate</strong>.</span></li>
+                  <li><span class="hf-step-num">3</span><span>Copy the token (starts with <code>hf_</code>), paste above, click <strong>Save</strong>. Works on every machine.</span></li>
+                  <li><span class="hf-step-num">4</span><span>To move to another PC: copy the project folder, fill <code>HF_TOKEN=</code> in <code>.env</code>, run <code>pip install flask</code> then <code>python server.py</code>.</span></li>
+                </ol>
+                <button class="op-refresh-btn" onclick="checkHfStatus()">⟳ Refresh HF Status</button>
+              </div>
+
+              <!-- Local Ollama Tab -->
+              <div class="ai-tab-pane" id="ai-pane-ollama">
+                <div class="op-status-row"><span style="color:var(--txt3);font-size:12px">Status:</span><span id="op-status-text" style="color:var(--txt2);font-size:12px">Checking…</span><span id="op-ollama-badge" class="op-badge err" style="margin-left:auto">Offline</span></div>
+                <div class="op-model-row"><label>Model</label>
+                  <select id="ollama-model-sel">
+                    <option value="llama3">llama3</option><option value="codellama">codellama</option>
+                    <option value="mistral">mistral</option><option value="deepseek-coder">deepseek-coder</option>
+                    <option value="phi3">phi3</option>
+                  </select>
+                </div>
+                <div class="op-toggle-row"><label class="toggle-sw"><input type="checkbox" id="ollama-enable-toggle" checked><span class="toggle-sl"></span></label><span>Prefer local Ollama over HF when available</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">Ollama Setup (this machine only)</div>
+                <ol class="op-steps">
+                  <li><span class="op-step-num">1</span><span>Download from <a href="https://ollama.com/download" target="_blank">ollama.com/download</a> and install.</span></li>
+                  <li><span class="op-step-num">2</span><span>Open a terminal: <code>ollama serve</code> — keep it open.</span></li>
+                  <li><span class="op-step-num">3</span><span>Pull a model: <code>ollama pull llama3</code> (4 GB) or <code>ollama pull phi3</code> (2 GB).</span></li>
+                  <li><span class="op-step-num">4</span><span>Click Refresh — status turns green. <strong>Note:</strong> Ollama only works on machines where installed. Use HF tab for portable use.</span></li>
+                </ol>
+                <button class="op-refresh-btn" onclick="checkOllamaStatus()">⟳ Refresh Ollama Status</button>
+              </div>
+            </div>
+          </div>
+          <div id="errors-list">
+            <div class="ph"><div class="ph-ico">✓</div><div>No errors to show</div></div>
+          </div>
+        </div>
+
+        <!-- SYMBOL TABLE -->
+        <div class="tab-pane" id="pane-symbols">
+          <div class="ph"><div class="ph-ico">⊞</div><div>Run code to see symbol table</div></div>
+        </div>
+
+        <!-- AST -->
+        <div class="tab-pane" id="pane-ast">
+          <div class="ph"><div class="ph-ico">⌥</div><div>Run code to see AST</div></div>
+        </div>
+
+        <!-- LEXER / TOKENS -->
+        <div class="tab-pane" id="pane-lexer">
+          <div class="ph"><div class="ph-ico">◈</div><div>Run code to see token stream</div></div>
+        </div>
+
+        <!-- ERROR REFERENCE -->
+        <div class="tab-pane" id="pane-errref">
+          <div class="ph"><div class="ph-ico">⊙</div><div>Loading...</div></div>
+        </div>
+
+      </div><!-- tab-body -->
+    </div><!-- tabs-sec -->
+  </div><!-- rp -->
+</div><!-- main -->
+
+<script>
+mermaid.initialize({startOnLoad:false, theme:'dark', themeVariables:{
+  background:'#0d0d14', primaryColor:'#1a1a28', primaryTextColor:'#ffffff',
+  primaryBorderColor:'#2a2a3f', lineColor:'#6c63ff', edgeLabelBackground:'#13131f'
+}});
+
+// ── State ──
+const DEFAULT_CPP = `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello, World!" << endl;
+    
+    int a = 10, b = 20;
+    cout << "Sum: " << a + b << endl;
+    
+    for (int i = 0; i < 5; i++) {
+        cout << "i = " << i << endl;
+    }
+    
+    return 0;
+}`;
+
+const DEFAULT_JAVA = `public class Main {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+        
+        int a = 10, b = 20;
+        System.out.println("Sum: " + (a + b));
+        
+        for (int i = 0; i < 5; i++) {
+            System.out.println("i = " + i);
+        }
+    }
+}`;
+
+let lang  = "cpp";
+let level = "beginner";
+let lastResult = null;
+let lastAnalysis = null;
+
+// ── CodeMirror ──
+const cm = CodeMirror.fromTextArea(document.getElementById("editor"), {
+  mode:"text/x-c++src", theme:"material-darker", lineNumbers:true,
+  autoCloseBrackets:true, matchBrackets:true, styleActiveLine:true,
+  indentUnit:4, tabSize:4, indentWithTabs:false,
+  extraKeys:{
+    "Ctrl-Enter":()=>run(), "Cmd-Enter":()=>run(),
+    "Ctrl-/": cm=>cm.execCommand("toggleComment"),
+    "Tab": cm=> cm.somethingSelected() ? cm.indentSelection("add") : cm.replaceSelection("    ")
+  }
+});
+cm.setValue(DEFAULT_CPP);
+cm.on("cursorActivity",()=>{
+  const c=cm.getCursor();
+  document.getElementById("cur").textContent=`Ln ${c.line+1}, Col ${c.ch+1}`;
+});
+
+// ── Lang switch ──
+document.querySelectorAll(".pill[data-lang]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".pill[data-lang]").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  lang = b.dataset.lang;
+  const java = lang==="java";
+  document.getElementById("fname").textContent = java?"Main.java":"main.cpp";
+  document.getElementById("tool-chip").textContent = java?"javac":"g++ 13.3";
+  cm.setOption("mode", java?"text/x-java":"text/x-c++src");
+  cm.setValue(java?DEFAULT_JAVA:DEFAULT_CPP);
+  clearAll();
+}));
+
+// ── Level switch ──
+document.querySelectorAll(".pill[data-level]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".pill[data-level]").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  level = b.dataset.level;
+  if(lastResult && lastResult.errors && lastResult.errors.length)
+    fetchExplain(lastResult.errors, lastResult.source);
+}));
+
+// ── Tab switching ──
+document.querySelectorAll(".tab-btn[data-tab]").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tab-btn").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll(".tab-pane").forEach(x=>x.classList.remove("active"));
+  b.classList.add("active");
+  document.getElementById("pane-"+b.dataset.tab).classList.add("active");
+}));
+
+// ── Resize (horizontal) ──
+const rz=document.getElementById("rz"),ep=document.getElementById("ep"),rp=document.getElementById("rp");
+let resH=false,sx=0,sw=0;
+rz.addEventListener("mousedown",e=>{resH=true;sx=e.clientX;sw=ep.offsetWidth;rz.classList.add("drag");document.body.style.userSelect="none";document.body.style.cursor="col-resize"});
+document.addEventListener("mousemove",e=>{
+  if(!resH)return;
+  const total=ep.parentElement.offsetWidth-4;
+  const nw=Math.min(Math.max(sw+e.clientX-sx,240),total-240);
+  ep.style.flex=`0 0 ${nw}px`;rp.style.flex=`0 0 ${total-nw}px`;cm.refresh();
+});
+document.addEventListener("mouseup",()=>{if(!resH)return;resH=false;rz.classList.remove("drag");document.body.style.userSelect="";document.body.style.cursor=""});
+
+// ── Resize (output vertical) ──
+const outSec=document.getElementById("out-sec");
+let resV=false,sy=0,sh=0;
+document.getElementById("out-hd").addEventListener("mousedown",e=>{resV=true;sy=e.clientY;sh=outSec.offsetHeight;document.body.style.userSelect="none";document.body.style.cursor="row-resize"});
+document.addEventListener("mousemove",e=>{if(!resV)return;const nh=Math.min(Math.max(sh+e.clientY-sy,60),520);outSec.style.flex=`0 0 ${nh}px`});
+document.addEventListener("mouseup",()=>{if(!resV)return;resV=false;document.body.style.userSelect="";document.body.style.cursor=""});
+
+// ── RUN ──
+// Patterns that mean the program reads from stdin
+const STDIN_PATTERNS = [
+  /\bcin\s*>>/,
+  /\bscanf\s*\(/,
+  /\bgets\s*\(/,
+  /\bfgets\s*\(/,
+  /\bgetchar\s*\(/,
+  /\bgetline\s*\(/,
+  /\bScanner\b/,        // Java
+  /System\.in/,         // Java
+];
+
+function codeNeedsInput(src) {
+  return STDIN_PATTERNS.some(p => p.test(src));
+}
+
+async function run(){
+  const code=cm.getValue().trim();
+  if(!code)return;
+
+  // ── Stdin guard ──
+  const stdinBox = document.getElementById("stdin-box");
+  const stdin = stdinBox.value;
+  if(codeNeedsInput(code) && stdin.trim()===""){
+    // Flash the input box and show a warning instead of running with garbage values
+    stdinBox.focus();
+    stdinBox.style.outline="2px solid var(--red)";
+    stdinBox.placeholder="⚠ This program reads input — type your values here first, then click Run again";
+    setTimeout(()=>{
+      stdinBox.style.outline="";
+      stdinBox.placeholder="Type input here before running\ne.g. for cin >> x, type: 42";
+    }, 3000);
+    setOutput(`<div class="ph" style="color:var(--red)"><div class="ph-ico">⚠</div><div><strong>Input required</strong> — your code uses <code>cin</code> / <code>scanf</code>.<br>Type your input values in the <strong>Program Input</strong> box below, then click Run again.</div></div>`);
+    return;
+  }
+  const btn=document.getElementById("run-btn");
+  btn.disabled=true;btn.classList.add("running");
+  document.getElementById("rl").textContent="Running";
+  document.getElementById("sdot").className="run";
+  setOutput(`<div class="ph"><div class="ph-ico" style="animation:rot 1s linear infinite;display:inline-block">⚙</div><div>Compiling...</div></div>`);
+  setErrors("loading");
+  const t0=performance.now();
+  try{
+    const timeoutRaw = parseInt(document.getElementById("timeout-sel").value, 10);
+    // stdin already captured above in the guard check
+    const body = {lang, code, stdin};
+    if (timeoutRaw > 0) body.timeout = timeoutRaw;
+    const res=await fetch("/api/compile",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+    const data=await res.json();
+    const ms=Math.round(performance.now()-t0);
+    lastResult=data;
+    renderOutput(data,ms);
+    // Analysis (async, don't block)
+    fetchAnalysis(code);
+    if(data.success){
+      renderNoErrors();
+    } else if(data.errors&&data.errors.length){
+      showSkeletons(data.errors);
+      fetchExplain(data.errors,data.source||code);
+    } else {
+      // Compilation failed but no structured errors were parsed —
+      // still show the raw stderr in the errors pane with NLP best-effort
+      if(data.stderr){
+        const syntheticErr=[{line:0,column:0,severity:"error",raw:data.stderr,source_line:""}];
+        const inlineExp=nlpExplainInBrowser(syntheticErr);
+        renderErrors(syntheticErr,inlineExp,false);
+      } else {
+        setErrors("done");
+      }
+    }
+  }catch(e){
+    setOutput(`<span style="color:var(--red);font-family:var(--mono)">Network error: ${esc(e.message)}</span>`);
+    setErrors("done");
+  }
+  btn.disabled=false;btn.classList.remove("running");
+  document.getElementById("rl").textContent="Run";
+}
+document.getElementById("run-btn").addEventListener("click",run);
+document.getElementById("stdin-clear").addEventListener("click",()=>{document.getElementById("stdin-box").value="";});
+
+// ── Output ──
+function renderOutput(data,ms){
+  const dot=document.getElementById("sdot");
+  document.getElementById("ctime").textContent=ms?`${ms}ms`:"";
+  if(data.success){
+    dot.className="ok";
+    const lines=data.output&&data.output.length?data.output.map(l=>`<div class="out-good">${esc(l)}</div>`).join(""):`<div style="color:var(--txt3);font-style:italic">No output</div>`;
+    setOutput(lines+`<div class="out-time">${ms}ms · ${esc(data.tool||"")}</div>`);
+  }else{
+    dot.className="err";
+    const stderrLines=(data.stderr||"Compilation failed").trim();
+    const errCount=(data.errors||[]).length;
+    setOutput(`<div class="stderr-card">
+      <div class="stderr-card-hd">
+        <span>✖</span>
+        <span>Compilation Failed${errCount?" — "+errCount+" error"+(errCount>1?"s":""):""}</span>
+      </div>
+      <div class="stderr-card-body">${esc(stderrLines)}</div>
+      <div class="stderr-hint">↳ See the <strong>Errors tab</strong> for plain-English explanations and fix suggestions${ollamaEnabled()?" powered by Ollama 🦙":""}.</div>
+    </div>`);
+  }
+}
+function setOutput(html){
+  const bd=document.getElementById("out-bd");
+  bd.innerHTML=html;
+  // Auto-scroll to bottom whenever new output is rendered
+  bd.scrollTop=bd.scrollHeight;
+  if(typeof updateScrollBtn==="function") updateScrollBtn();
+}
+
+// ── Scroll-to-bottom button + clear button logic ──
+(function(){
+  const bd=document.getElementById("out-bd");
+  const btn=document.getElementById("scroll-to-bottom");
+  const clearBtn=document.getElementById("clear-out-btn");
+
+  function updateScrollBtn(){
+    const notAtBottom=bd.scrollHeight-bd.scrollTop-bd.clientHeight>40;
+    btn.style.display=notAtBottom?"flex":"none";
+  }
+  window.updateScrollBtn=updateScrollBtn;
+
+  bd.addEventListener("scroll",updateScrollBtn);
+  btn.addEventListener("click",()=>{ bd.scrollTo({top:bd.scrollHeight,behavior:"smooth"}); });
+
+  if(clearBtn){
+    clearBtn.addEventListener("click",()=>{
+      setOutput(`<div class="ph"><div class="ph-ico">▶</div><div>Press <strong>Run</strong> to compile</div></div>`);
+      document.getElementById("sdot").className="";
+      document.getElementById("ctime").textContent="";
+      window.lastResult=null;
+    });
+  }
+})();
+function clearAll(){lastResult=null;lastAnalysis=null;setOutput(`<div class="ph"><div class="ph-ico">▶</div><div>Press Run to compile</div></div>`);setErrors("done");document.getElementById("sdot").className="";document.getElementById("ctime").textContent="";renderSymbols(null);renderAST(null);renderLexer(null)}
+
+// ── Errors ──
+function setErrors(mode){
+  const list=document.getElementById("errors-list");
+  const badge=document.getElementById("err-badge");
+  const aitag=document.getElementById("ai-tag");
+  badge.style.display="none";aitag.classList.remove("show");
+  if(mode==="loading"){
+    list.innerHTML=`<div class="ph"><div class="ph-ico" style="animation:rot 1s linear infinite;display:inline-block">⚙</div><div>Analysing...</div></div>`;
+  }else{
+    list.innerHTML=`<div class="ph"><div class="ph-ico">✓</div><div>No errors to show</div></div>`;
+  }
+}
+function renderNoErrors(){
+  document.getElementById("errors-list").innerHTML=`<div class="ok-box">✓ Compiled and ran successfully — no errors</div>`;
+  document.getElementById("err-badge").style.display="none";
+}
+function showSkeletons(errors){
+  const badge=document.getElementById("err-badge");
+  badge.textContent=errors.length;badge.style.display="inline-block";
+  document.getElementById("errors-list").innerHTML=errors.map((_,i)=>`
+    <div class="skel" id="sk${i}">
+      <div class="skel-ln" style="width:60%"></div>
+      <div class="skel-ln" style="width:90%"></div>
+      <div class="skel-ln" style="width:75%"></div>
+    </div>`).join("");
+}
+function renderErrors(errors,explanations,usedAI){
+  const aitag=document.getElementById("ai-tag");
+  if(usedAI)aitag.classList.add("show");
+  document.getElementById("errors-list").innerHTML=errors.map((e,i)=>{
+    const x=explanations[i]||{};
+    const warn=e.severity==="warning";
+    return `<div class="ecard ${warn?"warn":""}">
+      <div class="ecard-head">
+        <div class="ecard-ico">${warn?"⚠":"✖"}</div>
+        <div class="ecard-meta">
+          <div class="ecard-title">${esc(x.title||(warn?"Warning":"Error"))}</div>
+          <div class="ecard-loc">Line ${e.line}${e.column?", Col "+e.column:""} · ${esc(e.severity)}</div>
+        </div>
+      </div>
+      <div class="ecard-body">
+        ${e.source_line?`<div class="ecard-src">
+          <div class="src-lbl">Your code</div>
+          <div class="src-bad">${esc(e.source_line)}</div>
+          ${x.fixed_line&&x.fixed_line!==e.source_line?`<div class="src-lbl" style="margin-top:4px">Suggested</div><div class="src-fix">${esc(x.fixed_line)}</div>`:""}
+        </div>`:""}
+        ${x.explanation?`<div class="ecard-explain">${esc(x.explanation)}</div>`:""}
+        ${x.fix?`<div class="fix-lbl">How to fix</div><div class="fix-box">${esc(x.fix)}</div>`:""}
+        <div class="raw-tog" onclick="this.nextElementSibling.classList.toggle('open');this.querySelector('span').textContent=this.nextElementSibling.classList.contains('open')?'▾':'▸'">
+          <span>▸</span> Raw compiler output
+        </div>
+        <div class="raw-box">${esc(e.raw)}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ── AI Settings — HF Inference + Ollama ─────────────────────────────────────
+let ollamaState = { available: false, models: [], model: "llama3" };
+let hfState     = { ready: false, model: "mistralai/Mistral-7B-Instruct-v0.3" };
+
+function ollamaEnabled() {
+  const tog = document.getElementById("ollama-enable-toggle");
+  return tog ? tog.checked : false;
+}
+function getOllamaModel() {
+  const sel = document.getElementById("ollama-model-sel");
+  return sel ? sel.value : "llama3";
+}
+function getHfModel() {
+  const sel = document.getElementById("hf-model-sel");
+  return sel ? sel.value : "mistralai/Mistral-7B-Instruct-v0.3";
+}
+function switchAiTab(name, btn) {
+  document.querySelectorAll(".ai-tab").forEach(b => b.classList.remove("active"));
+  document.querySelectorAll(".ai-tab-pane").forEach(p => p.classList.remove("active"));
+  if (btn) btn.classList.add("active");
+  const pane = document.getElementById("ai-pane-" + name);
+  if (pane) pane.classList.add("active");
+}
+function updateAiChip() {
+  const chip  = document.getElementById("ollama-chip");
+  const label = document.getElementById("ollama-label");
+  const badge = document.getElementById("op-badge");
+  if (!chip) return;
+  chip.classList.remove("connected","hf-ready","error");
+  if (ollamaEnabled() && ollamaState.available) {
+    chip.classList.add("connected"); label.textContent = "Ollama ✓";
+    if (badge) { badge.textContent = "Ollama"; badge.className = "op-badge ok"; }
+  } else if (hfState.ready) {
+    chip.classList.add("hf-ready"); label.textContent = "HF AI ✓";
+    if (badge) { badge.textContent = "HF Ready"; badge.className = "op-badge warn"; }
+  } else {
+    chip.classList.add("error"); label.textContent = "AI ✗";
+    if (badge) { badge.textContent = "Not configured"; badge.className = "op-badge err"; }
+  }
+}
+async function checkHfStatus() {
+  const statusTx = document.getElementById("hf-status-text");
+  if (statusTx) statusTx.textContent = "Checking…";
+  try {
+    const res  = await fetch("/api/hf-status");
+    const data = await res.json();
+    hfState = data;
+    if (data.ready) {
+      if (statusTx) statusTx.textContent = "✓ Token active (" + data.preview + ") · " + data.model;
+      const sel = document.getElementById("hf-model-sel");
+      if (sel && data.model) {
+        let found = false;
+        for (const opt of sel.options) { if (opt.value===data.model){opt.selected=true;found=true;} }
+        if (!found) { const o=document.createElement("option"); o.value=data.model; o.textContent=data.model; o.selected=true; sel.insertBefore(o,sel.firstChild); }
+      }
+    } else {
+      if (statusTx) statusTx.textContent = data.error || "Token not set — paste it below.";
+    }
+  } catch(e) { if (statusTx) statusTx.textContent = "Cannot reach server."; }
+  updateAiChip();
+}
+async function checkOllamaStatus() {
+  const statusTx = document.getElementById("op-status-text");
+  const badge    = document.getElementById("op-ollama-badge");
+  const modelSel = document.getElementById("ollama-model-sel");
+  if (statusTx) statusTx.textContent = "Checking…";
+  try {
+    const res  = await fetch("/api/ollama-status");
+    const data = await res.json();
+    ollamaState = data;
+    if (data.available) {
+      if (statusTx) statusTx.textContent = "Running · " + data.models.length + " model(s)";
+      if (badge) { badge.textContent = "Online"; badge.className = "op-badge ok"; }
+      if (modelSel && data.models.length > 0) {
+        const cur = modelSel.value; modelSel.innerHTML = "";
+        [...new Set([...data.models,"llama3","codellama","mistral","deepseek-coder","phi3"])].forEach(m=>{
+          const o=document.createElement("option"); o.value=m;
+          o.textContent=data.models.includes(m)?m+" ✓":m;
+          if(m===cur||m===data.model) o.selected=true;
+          modelSel.appendChild(o);
+        });
+      }
+    } else {
+      if (statusTx) statusTx.textContent = "Not detected — see setup steps";
+      if (badge) { badge.textContent = "Offline"; badge.className = "op-badge err"; }
+    }
+  } catch(e) {
+    if (statusTx) statusTx.textContent = "Cannot reach server.";
+    if (badge) { badge.textContent = "Offline"; badge.className = "op-badge err"; }
+  }
+  updateAiChip();
+}
+function toggleHfVisibility() {
+  const inp = document.getElementById("hf-token-input");
+  if (inp) inp.type = inp.type === "password" ? "text" : "password";
+}
+document.addEventListener("DOMContentLoaded", () => {
+  const inp = document.getElementById("hf-token-input");
+  if (inp) inp.addEventListener("input", () => {
+    const v = inp.value.trim(); inp.classList.remove("valid","invalid");
+    if (v.length > 0) inp.classList.add(v.startsWith("hf_") ? "valid" : "invalid");
+  });
+});
+async function saveHfSettings() {
+  const inp = document.getElementById("hf-token-input");
+  const btn = document.getElementById("hf-save-btn");
+  if (!inp) return;
+  const token = inp.value.trim();
+  const model = getHfModel();
+  if (!token)                  { setHfMsg("Enter your token first.", "err"); return; }
+  if (!token.startsWith("hf_")){ setHfMsg("Invalid — tokens start with hf_", "err"); inp.classList.add("invalid"); return; }
+  btn.disabled=true; btn.textContent="Saving…"; setHfMsg("Saving…","info");
+  try {
+    const res  = await fetch("/api/hf-settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({token,model})});
+    const data = await res.json();
+    if (data.ok) {
+      inp.value=""; inp.classList.remove("valid","invalid");
+      setHfMsg("✓ Token saved — active immediately!","ok");
+      await checkHfStatus();
+    } else { setHfMsg("✖ "+(data.results?.token?.message||data.message||"Save failed."),"err"); }
+  } catch(e) { setHfMsg("✖ Network error.","err"); }
+  finally { btn.disabled=false; btn.textContent="Save"; }
+}
+async function saveHfModelOnly() {
+  const model = getHfModel();
+  try {
+    await fetch("/api/hf-settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({model})});
+    setHfMsg("✓ Model → "+model,"ok");
+    setTimeout(()=>setHfMsg("","info"),3000);
+  } catch(e){}
+}
+function setHfMsg(msg,type){
+  const el=document.getElementById("hf-save-msg");
+  if(el){el.textContent=msg;el.className="hf-status-msg "+(type||"info");}
+}
+checkHfStatus();
+checkOllamaStatus();
+setInterval(()=>{checkHfStatus();checkOllamaStatus();},20000);
+
+
+// ── Helper: switch to a tab by name ──────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll(".tab-btn[data-tab]").forEach(b => {
+    b.classList.toggle("active", b.dataset.tab === name);
+  });
+  document.querySelectorAll(".tab-pane").forEach(p => {
+    p.classList.toggle("active", p.id === "pane-" + name);
+  });
+}
+
+// ── Inline NLP rule-based fallback (runs entirely in the browser) ──
+// Mirrors the Python _RULES in nlp_explainer.py so humanized explanations
+// are ALWAYS shown even when the /api/explain endpoint is unreachable.
+const NLP_RULES=[
+  {pat:/expected.*[;,].*before|expected\s*['"`;]['"]|expected\s*';'/i,
+   title:"Missing Semicolon",
+   beg:"Every statement must end with `;`. You forgot one on this line.",
+   mid:"Add `;` at the end of the line shown above the error marker.",
+   exp:"Statement not terminated — parser expected `;` before the next token.",
+   fix:"Add `;` to end the statement on the flagged line."},
+
+  {pat:/was not declared in this scope|cannot find symbol|undeclared identifier/i,
+   title:"Unknown Name / Variable",
+   beg:"You used a name that C++/Java doesn't recognise. Either you haven't declared it yet, or there's a typo.",
+   mid:"Declare the variable first (`int x = 0;`) or check spelling. C++ is case-sensitive — `myVar` ≠ `myvar`.",
+   exp:"Name lookup failed in current and enclosing scopes. Verify declaration, scope, and linkage.",
+   fix:"Declare the variable before using it, or correct the spelling."},
+
+  {pat:/invalid conversion|incompatible types|cannot convert|no viable conversion/i,
+   title:"Type Mismatch",
+   beg:"You're putting the wrong kind of value into a variable — like text into a number slot.",
+   mid:"Match the value type to the variable type. Use `std::string` for text, `int`/`double` for numbers.",
+   exp:"Implicit conversion rejected by the type system. Use static_cast<> or fix the declared type.",
+   fix:"Change the variable type, or cast the value: `int x = (int)someDouble;`"},
+
+  {pat:/expected.*\}|reached end of file|unmatched/i,
+   title:"Missing Closing Brace `}`",
+   beg:"You opened a `{` but never closed it. Every `{` needs a matching `}`.",
+   mid:"Add `}` at the end of the unclosed block. Use your editor's bracket-match to find the opening `{`.",
+   exp:"Parser reached EOF or unexpected token while awaiting compound-statement terminator `}`.",
+   fix:"Add the missing `}` to close the open block."},
+
+  {pat:/expected.*\)|missing '\)'/i,
+   title:"Missing Closing Parenthesis `)`",
+   beg:"You opened a `(` but never closed it with `)`. Count your parentheses — they must match.",
+   mid:"Find the opening `(` and add the missing `)` after the expression.",
+   exp:"Unbalanced parenthesis in expression or parameter list.",
+   fix:"Add `)` to match the unclosed `(`."},
+
+  {pat:/too few arguments|too many arguments|no matching function|no match for call/i,
+   title:"Wrong Number of Arguments",
+   beg:"You called a function with the wrong number of values. Count how many the function expects.",
+   mid:"Look at the function definition and match the number and types of arguments.",
+   exp:"Arity mismatch at call site. No viable overload found for given argument list.",
+   fix:"Check the function signature and pass exactly the right number of arguments."},
+
+  {pat:/no match for.*operator<<|no match for.*operator>>/i,
+   title:"Can't Print / Read That Type",
+   beg:"You're trying to print or read a value that C++ doesn't know how to handle — maybe a `void` result.",
+   mid:"Make sure what you're printing is `int`, `string`, `double`, etc. Don't print `void` function results.",
+   exp:"ADL/overload resolution failed for operator<< / >>. No viable overload for given operand type.",
+   fix:"Remove the print of a void function result, or add an `operator<<` overload for your type."},
+
+  {pat:/undefined reference|unresolved external/i,
+   title:"Missing Function Body (Linker Error)",
+   beg:"The compiler knows the function exists, but can't find its code. You may have declared it but never written it.",
+   mid:"Write the function body, or link the library: `g++ file.cpp -lmylibrary`",
+   exp:"Undefined external symbol at link time. Symbol declared but no definition in any translation unit.",
+   fix:"Implement the function body, or add the library flag to your compile command."},
+
+  {pat:/control reaches end of non-void function|missing return/i,
+   title:"Function Might Not Return a Value",
+   beg:"Your function says it returns something, but there's a path through it that never hits a `return`.",
+   mid:"Add a `return` at the bottom and check every `if/else` branch returns a value.",
+   exp:"Control-flow analysis: at least one path through function body has no return statement.",
+   fix:"Add `return <value>;` at the end, and ensure all branches return."},
+
+  {pat:/redefinition|already defined|duplicate/i,
+   title:"Name Defined Twice",
+   beg:"You've defined the same variable or function more than once in the same place.",
+   mid:"Remove the duplicate. In headers use `#pragma once` to prevent double-inclusion.",
+   exp:"ODR violation — multiple definitions in same scope or translation unit.",
+   fix:"Delete the duplicate definition."},
+
+  {pat:/division by zero/i,
+   title:"Division by Zero",
+   beg:"You're dividing by zero — this will crash your program!",
+   mid:"Guard the division: `if (divisor != 0) { result = a / divisor; }`",
+   exp:"Undefined behaviour: integer/float division by zero detected at compile time.",
+   fix:"Add a zero-check before dividing."},
+
+  {pat:/array.*bound|index.*out of|subscript/i,
+   title:"Array Index Out of Bounds",
+   beg:"You're reading an array slot that doesn't exist. If the array has 5 items, valid slots are 0–4.",
+   mid:"Check your index is always 0 to (array_size − 1).",
+   exp:"Out-of-bounds array access — undefined behaviour or compile-time constant fold error.",
+   fix:"Ensure the index is within 0 to length−1."},
+
+  {pat:/use.*uninitialized|may be used uninitiali/i,
+   title:"Variable Used Before Being Set",
+   beg:"You declared a variable but never gave it a starting value. It holds garbage — unpredictable!",
+   mid:"Always initialise when declaring: `int x = 0;`",
+   exp:"Uninitialized variable read — undefined behaviour per C++ standard.",
+   fix:"Give the variable an initial value when you declare it."},
+];
+
+function nlpExplainInBrowser(errors){
+  const lvl=typeof level!=="undefined"?level:"beginner";
+  const lvlIdx={beginner:0,intermediate:1,expert:2}[lvl]||0;
+  return errors.map(e=>{
+    const raw=(e.raw||"").toLowerCase();
+    for(const r of NLP_RULES){
+      if(r.pat.test(raw)){
+        const exps=[r.beg,r.mid,r.exp];
+        return {title:r.title, explanation:exps[lvlIdx], fix:r.fix, fixed_line:e.source_line||""};
+      }
+    }
+    // Generic fallback — still better than nothing
+    return {
+      title:"Compiler Error",
+      explanation:`The compiler flagged this line: "${e.raw||"unknown error"}"`,
+      fix:"Read the message carefully and check the highlighted line for typos or missing syntax.",
+      fixed_line:e.source_line||""
+    };
+  });
+}
+
+async function fetchExplain(errors,source){
+  // Immediately show NLP-explained errors (no network needed)
+  const inlineFallback=nlpExplainInBrowser(errors);
+  renderErrors(errors,inlineFallback,false);   // show right away
+
+  // Then try the server for richer / AI (Ollama or Claude) explanations
+  try{
+    const payload={
+      errors, source, level, lang,
+      prefer_ollama: ollamaEnabled(),
+      ollama_model:  getOllamaModel(),
+      hf_model:      getHfModel()
+    };
+    const res=await fetch("/api/explain",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)});
+    if(!res.ok) return; // keep inline fallback
+    const data=await res.json();
+    const exps=data.explanations||[];
+    // Merge: use server explanation where available, fall back to inline NLP per-error
+    const merged=errors.map((_,i)=>{
+      const srv=exps[i];
+      const loc=inlineFallback[i];
+      if(srv&&(srv.explanation||srv.fix)) return srv;
+      return loc;
+    });
+    // Update the AI tag label based on what was used
+    const aitag=document.getElementById("ai-tag");
+    if(data.ai){
+      let src="✦ AI"; if(ollamaEnabled()&&ollamaState.available)src="🦙 Ollama"; else if(hfState.ready)src="🤗 HF Inference";
+      aitag.textContent=src+" Explanations";
+      aitag.classList.add("show");
+    }
+    renderErrors(errors,merged,data.ai||false);
+  }catch(e){
+    // Network error — inline NLP already rendered, nothing more to do
+  }
+}
+
+// ── Analysis (GCC syntax + AST + symbols) ──
+async function fetchAnalysis(code){
+  try{
+    const level = document.getElementById("level-sel") ? document.getElementById("level-sel").value : "beginner";
+    const res=await fetch("/api/analyse",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({code,lang,level})});
+    const data=await res.json();
+    lastAnalysis=data;
+    renderSymbols(data);
+    renderAST(data);
+    renderLexer(data);
+    // Show GCC syntax errors + NLP explanations in the Symbols pane header
+    renderSyntaxBanner(data);
+  }catch(e){}
+}
+
+// ── GCC Syntax Banner with NLP explanations ──
+function renderSyntaxBanner(data){
+  const pane=document.getElementById("pane-symbols");
+  const existing=document.getElementById("syntax-banner");
+  if(existing) existing.remove();
+
+  const errs=data.syntax_errors||[];
+  const exps=data.syntax_explanations||[];
+  const gccOk=data.gcc_available;
+
+  if(!gccOk || errs.length===0) return;
+
+  let html=`<div id="syntax-banner" style="margin-bottom:12px">`;
+  html+=`<div style="font-size:11px;font-weight:700;color:var(--txt3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">`;
+  html+=`⚡ GCC Syntax Check — ${errs.length} issue${errs.length>1?'s':''} found`;
+  if(data.syntax_ai) html+=` &nbsp;<span style="color:var(--accent2);font-size:10px">✦ AI Explained</span>`;
+  html+=`</div>`;
+
+  // Fill any missing server explanations with inline NLP
+  const filledExps=errs.map((e,i)=>{
+    const srv=exps[i];
+    if(srv&&(srv.explanation||srv.fix)) return srv;
+    const fb=nlpExplainInBrowser([e])[0];
+    return fb||{};
+  });
+
+  errs.forEach((e,i)=>{
+    const exp=filledExps[i]||{};
+    const sev=e.severity==="error"?"var(--red)":"var(--yellow)";
+    html+=`<div class="ecard" style="margin-bottom:8px;border-left:3px solid ${sev}">`;
+    html+=`<div class="ecard-loc" style="color:${sev}">Line ${e.line}${e.column?`:${e.column}`:""} &nbsp;·&nbsp; ${e.severity.toUpperCase()}</div>`;
+    if(exp.title){
+      html+=`<div class="ecard-title">${esc(exp.title)}</div>`;
+      html+=`<div class="ecard-explain">${esc(exp.explanation||"")}</div>`;
+      html+=`<div class="ecard-fix"><span style="color:var(--green);font-weight:700">Fix: </span>${esc(exp.fix||"")}</div>`;
+      if(exp.fixed_line){
+        html+=`<div class="ecard-code" style="margin-top:4px"><code style="font-family:var(--mono);font-size:11px;color:var(--green)">${esc(exp.fixed_line)}</code></div>`;
+      }
+    } else {
+      html+=`<div class="ecard-raw" style="font-family:var(--mono);font-size:11px;color:var(--txt2)">${esc(e.raw)}</div>`;
+      if(e.source_line) html+=`<div style="font-family:var(--mono);font-size:10px;color:var(--txt3);margin-top:3px">${esc(e.source_line)}</div>`;
+    }
+    html+=`</div>`;
+  });
+
+  html+=`</div>`;
+
+  // Prepend to pane
+  const tmp=document.createElement("div");
+  tmp.innerHTML=html;
+  pane.insertBefore(tmp.firstChild, pane.firstChild);
+}
+
+// ── Symbol Table ──
+function renderSymbols(data){
+  const pane=document.getElementById("pane-symbols");
+  if(!data){pane.innerHTML=`<div class="ph"><div class="ph-ico">⊞</div><div>Run code to see symbol table</div></div>`;return}
+  const syms=data.symbols||[];
+  const warns=data.warnings||[];
+  let html="";
+  if(warns.length){
+    html+=warns.map(w=>`<div class="sym-warn"><span class="sym-warn-ico">⚠</span><span>${esc(w.message)} <span style="color:var(--txt3)">(line ${w.line})</span></span></div>`).join("");
+  }
+  if(!syms.length){html+=`<div class="ph"><div class="ph-ico">⊞</div><div>No symbols found</div></div>`;pane.innerHTML=html;return}
+  html+=`<table class="sym-table"><thead><tr>
+    <th>Name</th><th>Kind</th><th>Type</th><th>Scope</th><th>Line</th><th>Details</th>
+  </tr></thead><tbody>`;
+  html+=syms.map(s=>{
+    const klass={"function":"k-fn","variable":"k-var","class":"k-cls","parameter":"k-par"}[s.kind]||"k-var";
+    const det=s.kind==="function"&&s.params?`params: ${esc(s.params.substring(0,30))}`:s.initialized?"initialized":"";
+    return `<tr>
+      <td style="font-weight:600">${esc(s.name)}</td>
+      <td><span class="sym-kind ${klass}">${esc(s.kind)}</span></td>
+      <td style="color:var(--blue)">${esc(s.type)}</td>
+      <td style="color:var(--txt3)">${esc(s.scope)}</td>
+      <td style="color:var(--txt3)">${s.line}</td>
+      <td style="color:var(--txt3);font-size:11px">${det}</td>
+    </tr>`;
+  }).join("");
+  html+="</tbody></table>";
+  pane.innerHTML=html;
+}
+
+// ── AST ──
+async function renderAST(data){
+  const pane=document.getElementById("pane-ast");
+  if(!data){pane.innerHTML=`<div class="ph"><div class="ph-ico">⌥</div><div>Run code to see AST</div></div>`;return}
+  const mmd=data.mermaid||"";
+  if(!mmd){pane.innerHTML=`<div class="ph"><div class="ph-ico">⌥</div><div>No AST generated</div></div>`;return}
+
+  pane.innerHTML=`
+    <div id="ast-wrap">
+      <div id="mermaid-out"></div>
+    </div>
+    <details style="margin-top:10px">
+      <summary style="font-size:11px;color:var(--txt3);cursor:pointer;user-select:none">▸ Raw Mermaid source</summary>
+      <div class="ast-raw" style="margin-top:6px">${esc(mmd)}</div>
+    </details>`;
+
+  try{
+    const {svg}=await mermaid.render("mermaid-svg-"+Date.now(),mmd);
+    document.getElementById("mermaid-out").innerHTML=svg;
+  }catch(e){
+    document.getElementById("mermaid-out").innerHTML=`<div style="color:var(--red);font-size:12px">AST render error: ${esc(e.message)}</div>`;
+  }
+}
+
+// ── Lexer / Tokens ──
+function renderLexer(data){
+  const pane=document.getElementById("pane-lexer");
+  if(!data||!data.tokens||!data.tokens.length){
+    pane.innerHTML=`<div class="ph"><div class="ph-ico">◈</div><div>Run code to see token stream</div></div>`;return;
+  }
+  const types=["KEYWORD","IDENTIFIER","NUMBER","STRING","OPERATOR","PUNCTUATION","COMMENT","PREPROC","UNKNOWN"];
+  const legend=types.map(t=>`<span class="tok t-${t}" title="${t}">${t}</span>`).join("");
+  const toks=data.tokens.map(t=>{
+    const title=`${t.type} · Line ${t.line}, Col ${t.column}`;
+    return `<span class="tok t-${t.type}" title="${title}">${esc(t.value)}</span>`;
+  }).join("");
+  pane.innerHTML=`<div class="tok-legend">${legend}</div><div class="tok-grid">${toks}</div>`;
+}
+
+// ── Error Reference ──
+async function loadErrRef(){
+  try{
+    const res=await fetch("/api/error-ref");
+    const refs=await res.json();
+    renderErrRef(refs);
+  }catch(e){
+    document.getElementById("pane-errref").innerHTML=`<div class="ph"><div class="ph-ico">⊙</div><div>Could not load reference</div></div>`;
+  }
+}
+
+function renderErrRef(refs){
+  const pane=document.getElementById("pane-errref");
+  pane.innerHTML=refs.map((r,i)=>{
+    const langBadges=r.languages.map(l=>`<span class="ref-lang ${l==="C++"?"rl-cpp":"rl-java"}">${l}</span>`).join("");
+    return `<div class="ref-card">
+      <div class="ref-head" onclick="toggleRef(${i})">
+        <span class="ref-id">${r.id}</span>
+        <span class="ref-tag">${esc(r.tag)}</span>
+        <div class="ref-langs">${langBadges}</div>
+        <span style="color:var(--txt3);font-size:13px;margin-left:4px">▸</span>
+      </div>
+      <div class="ref-body" id="rref${i}">
+        <div class="ref-desc">${esc(r.description)}</div>
+        <div class="code-lbl">❌ Before (broken)</div>
+        <div class="ref-code ref-bad">${esc(r.example_bad)}</div>
+        <div class="code-lbl">✅ After (fixed)</div>
+        <div class="ref-code ref-good">${esc(r.example_good)}</div>
+        <div class="ref-tip">💡 ${esc(r.tip)}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function toggleRef(i){
+  const b=document.getElementById("rref"+i);
+  const tog=b.previousElementSibling.querySelector("span:last-child");
+  b.classList.toggle("open");
+  tog.textContent=b.classList.contains("open")?"▾":"▸";
+}
+
+function esc(s){
+  if(s==null)return"";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── Init ──
+loadErrRef();
+</script>
+</body>
+</html>
